@@ -2,6 +2,7 @@ const express = require("express");
 const amqp = require("amqplib");
 const Redis = require("ioredis");
 const cors = require("cors");
+const JobRequest = require("./src/models/job-request");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
@@ -67,36 +68,20 @@ async function initRedis() {
 // Routes
 app.post("/api/jobs", async (req, res) => {
   try {
-    const body = req.body;
-    const {
-      targetUrl,
-      method = "GET",
-      headers = {},
-      payload,
-      callbackUrl,
-      maxRetries = 3,
-      retryDelay = 1000,
-    } = body;
+    const { error, value } = JobRequest.validationSchema().validate(req.body);
 
-    if (!targetUrl || !callbackUrl) {
-      return res
-        .status(400)
-        .json({ error: "targetUrl and callbackUrl are required" });
+    if (error) {
+      return res.status(400).json({
+        error: "Validation failed",
+        details: error.details,
+      });
     }
 
     // Send message to RabbitMQ queue
     if (channel) {
-      const message = {
-        targetUrl,
-        method,
-        headers,
-        payload,
-        callbackUrl,
-        maxRetries,
-        retryDelay,
-        createdAt: body.createdAt || new Date().toISOString(),
-      };
+      const message = value;
 
+      console.log("Message:", message);
       channel.sendToQueue(
         "request-queue",
         Buffer.from(JSON.stringify(message))
