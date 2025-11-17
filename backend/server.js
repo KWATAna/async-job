@@ -68,18 +68,33 @@ async function initRedis() {
 app.post("/api/jobs", async (req, res) => {
   try {
     const body = req.body;
+    const {
+      targetUrl,
+      method = "GET",
+      headers = {},
+      payload,
+      callbackUrl,
+      maxRetries = 3,
+      retryDelay = 1000,
+    } = body;
+
+    if (!targetUrl || !callbackUrl) {
+      return res
+        .status(400)
+        .json({ error: "targetUrl and callbackUrl are required" });
+    }
 
     // Send message to RabbitMQ queue
     if (channel) {
       const message = {
-        targetUrl: body.targetUrl,
-        method: body.method,
-        headers: body.headers,
-        payload: body.payload,
-        callbackUrl: body.callbackUrl,
-        maxRetries: body.maxRetries,
-        retryDelay: body.retryDelay,
-        createdAt: body.createdAt,
+        targetUrl,
+        method,
+        headers,
+        payload,
+        callbackUrl,
+        maxRetries,
+        retryDelay,
+        createdAt: body.createdAt || new Date().toISOString(),
       };
 
       channel.sendToQueue(

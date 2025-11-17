@@ -3,19 +3,119 @@ const axios = require("axios");
 
 // Connect to RabbitMQ Docker container
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://guest:guest@localhost";
+const DEFAULT_RETRY_DELAY = 1000;
+const DEFAULT_MAX_RETRIES = 3;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const shouldRetryStatus = (status) =>
+  status === 429 || (status >= 500 && status < 600);
+
+async function sendCallback(callbackUrl, payload) {
+  if (!callbackUrl) {
+    console.warn("No callbackUrl provided, skipping callback");
+    return;
+  }
+
+  try {
+    await axios.post(callbackUrl, payload);
+    console.log(`Sent callback to ${callbackUrl}`);
+  } catch (error) {
+    console.error(`Failed to send callback to ${callbackUrl}:`, error.message);
+  }
+}
 
 async function processRequest(message) {
-  try {
+  const {
+    targetUrl,
+    method = "GET",
+    headers = {},
+    payload,
+    callbackUrl,
+    maxRetries = DEFAULT_MAX_RETRIES,
+    retryDelay = DEFAULT_RETRY_DELAY,
+  } = message;
+
+  let attempts = 0;
+  let statusCode = null;
+  let success = false;
+  let responseData;
+  let errorMessage = null;
+
+  while (attempts < maxRetries) {
+    attempts += 1;
+
     try {
-      await axios.get(message.targetUrl);
-      console.log(`Request sent on behalf of user`);
-    } catch (statusError) {
-      console.error("Failed to update status:", statusError.message);
+      const response = await axios({
+        url: targetUrl,
+        method,
+        headers,
+        data: payload,
+        validateStatus: () => true,
+      });
+
+      statusCode = response.status;
+      responseData = response.data;
+
+      if (shouldRetryStatus(statusCode)) {
+        errorMessage = `Retryable status ${statusCode} received`;
+
+        if (attempts < maxRetries) {
+          console.warn(
+            `Attempt ${attempts}/${maxRetries} failed with status ${statusCode}. Retrying in ${retryDelay}ms`
+          );
+          await wait(retryDelay);
+          continue;
+        }
+      }
+
+      success = statusCode >= 200 && statusCode < 300;
+      if (!success) {
+        errorMessage = `Request completed with non-success status ${statusCode}`;
+      }
+      break;
+    } catch (error) {
+      statusCode = error.response ? error.response.status : null;
+      errorMessage = error.message;
+
+      if (
+        statusCode &&
+        shouldRetryStatus(statusCode) &&
+        attempts < maxRetries
+      ) {
+        console.warn(
+          `Attempt ${attempts}/${maxRetries} failed with status ${statusCode}. Retrying in ${retryDelay}ms`
+        );
+        await wait(retryDelay);
+        continue;
+      }
+
+      if (!statusCode && attempts < maxRetries) {
+        console.warn(
+          `Attempt ${attempts}/${maxRetries} failed (${error.message}). Retrying in ${retryDelay}ms`
+        );
+        await wait(retryDelay);
+        continue;
+      }
+
+      break;
     }
-  } catch (error) {
-    console.error(`Error processing request: `, error.message);
-    throw error;
   }
+
+  const callbackPayload = {
+    targetUrl,
+    method,
+    attempts,
+    maxRetries,
+    success,
+    statusCode,
+    response: success ? responseData : undefined,
+    error: success ? undefined : errorMessage,
+    completedAt: new Date().toISOString(),
+  };
+
+  console.log("Callback response:", callbackPayload);
+  await sendCallback(callbackUrl, callbackPayload);
 }
 
 async function initWorker() {
