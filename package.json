@@ -10,10 +10,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "install:backend": "cd backend && npm install",
     "install:worker": "cd worker && npm install",
-    "start:backend": "node backend/server.js",
+    "build:backend": "cd backend && npm run build",
+    "start:backend": "cd backend && npm start",
+    "dev:backend": "cd backend && npm run dev",
     "install:all": "npm run install:backend && npm run install:worker",
+    "build:all": "npm run build:backend",
     "start:worker": "node worker/worker.js",
-    "start": "concurrently \"npm run start:backend\" \"npm run start:worker\""
+    "start": "npm run build:all && concurrently \"npm run start:backend\" \"npm run start:worker\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run start:worker\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

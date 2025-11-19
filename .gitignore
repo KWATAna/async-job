@@ -10,3 +10,8 @@ Thumbs.db
 
 # IDE
 .vscode/
+
+
+dist/
+build/
+*.tsbuildinfo

@@ -1,9 +1,9 @@
-const JobRequest = require("../models/job-request");
-const queueService = require("./queue-service");
-const redisService = require("./redis-service");
+import JobRequest from "../models/job-request";
+import queueService from "./queue-service";
+import redisService from "./redis-service";
 
 class JobService {
-  async createJob(jobPayload) {
+  async createJob(jobPayload: any) {
     const job = new JobRequest(jobPayload);
 
     await this.ensureQueueConnection();
@@ -30,8 +30,9 @@ class JobService {
     }
   }
 
-  async persistInitialJob(job) {
+  async persistInitialJob(job: JobRequest) {
     await redisService.storeJob(job.id, {
+      id: job.id,
       status: "queued",
       attempts: 0,
       targetUrl: job.targetUrl,
@@ -45,9 +46,9 @@ class JobService {
     });
   }
 
-  async getJob(jobId) {
+  async getJob(jobId: any) {
     return redisService.getJob(jobId);
   }
 }
 
-module.exports = new JobService();
+export default new JobService();

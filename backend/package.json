@@ -12,9 +12,12 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
+    "@types/ioredis": "^4.28.10",
     "@types/node": "^24.10.1",
+    "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
@@ -22,7 +25,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
-    "lint": "eslint 'src/**/*.ts'"
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/app.ts",
+    "lint": "eslint 'src/**/*.ts'",
+    "clean": "rm -rf dist"
   }
 }

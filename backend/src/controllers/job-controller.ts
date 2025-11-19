@@ -1,15 +1,17 @@
-const JobRequest = require("../models/job-request");
-const jobService = require("../services/job-service");
+import { Request, Response } from "express";
+import JobRequest from "../models/job-request";
+import jobService from "../services/job-service";
 
 class JobController {
-  async createJob(req, res) {
+  async createJob(req: Request, res: Response): Promise<void> {
     try {
       const { error, value } = JobRequest.validationSchema().validate(req.body);
       if (error) {
-        return res.status(400).json({
+        res.status(400).json({
           error: "Validation failed",
           details: error.details,
         });
+        return;
       }
 
       const job = await jobService.createJob(value);
@@ -27,15 +29,16 @@ class JobController {
     }
   }
 
-  async getJobStatus(req, res) {
+  async getJobStatus(req: Request, res: Response): Promise<void> {
     try {
       const { jobId } = req.params;
       const job = await jobService.getJob(jobId);
 
       if (!job) {
-        return res.status(404).json({
+        res.status(404).json({
           error: "Job not found",
         });
+        return;
       }
 
       res.json(job);
@@ -48,4 +51,4 @@ class JobController {
   }
 }
 
-module.exports = new JobController();
+export default new JobController();
