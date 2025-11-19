@@ -1,5 +1,9 @@
 const Joi = require("joi");
 const { v4: uuidv4 } = require("uuid");
+const {
+  allowedHttpMethods,
+  defaultHttpMethod,
+} = require("../config/http-config");
 
 class JobRequest {
   constructor({
@@ -25,7 +29,7 @@ class JobRequest {
   static validationSchema() {
     return Joi.object({
       targetUrl: Joi.string().uri().required(),
-      method: Joi.string().valid("GET", "POST").default("GET"),
+      method: Joi.string().valid(...allowedHttpMethods).default(defaultHttpMethod),
       headers: Joi.object().default({}),
       payload: Joi.alternatives().try(Joi.object()).allow(null).default(null),
       callbackUrl: Joi.string().uri().required(),

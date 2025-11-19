@@ -1,22 +1,47 @@
 const axios = require("axios");
 const RetryStrategy = require("../strategies/retry-strategy");
-const { wait } = require("../utils/helpers");
 
 class HttpRequestService {
-  constructor() {
-    this.axiosConfig = {
+  constructor({ httpClient = axios, baseConfig = {} } = {}) {
+    this.httpClient = httpClient;
+    this.baseConfig = {
       validateStatus: () => true,
+      ...baseConfig,
     };
+    this.decorators = [];
   }
 
-  async executeRequest(url, method, headers, payload) {
-    return await axios({
+  registerDecorator(decorator) {
+    if (typeof decorator === "function") {
+      this.decorators.push(decorator);
+    }
+  }
+
+  buildRequestConfig({ url, method, headers, payload }) {
+    let config = {
       url,
       method,
       headers,
       data: payload,
-      ...this.axiosConfig,
+      ...this.baseConfig,
+    };
+
+    this.decorators.forEach((decorate) => {
+      // Decorators allow auth, tracing, or transport tweaks without editing this class.
+      config = decorate(config) || config;
     });
+
+    return config;
+  }
+
+  async executeRequest(url, method, headers, payload) {
+    const requestConfig = this.buildRequestConfig({
+      url,
+      method,
+      headers,
+      payload,
+    });
+    return this.httpClient(requestConfig);
   }
 
   shouldRetryBasedOnError(error) {
@@ -29,4 +54,9 @@ class HttpRequestService {
   }
 }
 
-module.exports = new HttpRequestService();
+const defaultHttpRequestService = new HttpRequestService();
+
+module.exports = defaultHttpRequestService;
+module.exports.HttpRequestService = HttpRequestService;
+module.exports.createHttpRequestService = (options) =>
+  new HttpRequestService(options);
