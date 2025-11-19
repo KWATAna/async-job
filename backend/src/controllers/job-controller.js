@@ -1,6 +1,5 @@
 const JobRequest = require("../models/job-request");
-const queueService = require("../services/queue-service");
-const redisService = require("../services/redis-service");
+const jobService = require("../services/job-service");
 
 class JobController {
   async createJob(req, res) {
@@ -13,38 +12,7 @@ class JobController {
         });
       }
 
-      const job = new JobRequest(value);
-
-      if (!queueService.channel) {
-        await queueService.connect();
-      }
-
-      await redisService.storeJob(job.id, {
-        status: "queued",
-        attempts: 0,
-        targetUrl: job.targetUrl,
-        method: job.method,
-        headers: JSON.stringify(job.headers),
-        payload: job.payload ? JSON.stringify(job.payload) : "",
-        callbackUrl: job.callbackUrl,
-        maxRetries: job.maxRetries,
-        retryDelay: job.retryDelay,
-        createdAt: job.createdAt.toISOString(),
-      });
-
-      const published = await queueService.publishJob(job);
-
-      if (!published) {
-        await redisService.updateJobStatus(
-          job.id,
-          "failed",
-          "Failed to publish job to queue"
-        );
-
-        return res.status(500).json({
-          error: "Failed to queue job",
-        });
-      }
+      const job = await jobService.createJob(value);
 
       res.status(202).json({
         jobId: job.id,
@@ -62,7 +30,7 @@ class JobController {
   async getJobStatus(req, res) {
     try {
       const { jobId } = req.params;
-      const job = await redisService.getJob(jobId);
+      const job = await jobService.getJob(jobId);
 
       if (!job) {
         return res.status(404).json({
