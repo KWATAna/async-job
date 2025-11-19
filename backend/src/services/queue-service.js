@@ -1,16 +1,16 @@
 const amqp = require("amqplib");
 
 class QueueService {
-  constructor() {
+  constructor({ amqpClient = amqp, queueName = "request-queue" } = {}) {
+    this.amqpClient = amqpClient;
+    this.queueName = queueName;
     this.connection = null;
     this.channel = null;
-    this.queueName = "request-queue";
   }
 
-  async connect() {
+  async connect(rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://localhost:5672") {
     try {
-      const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://localhost:5672";
-      this.connection = await amqp.connect(rabbitmqUrl);
+      this.connection = await this.amqpClient.connect(rabbitmqUrl);
       this.channel = await this.connection.createChannel();
 
       await this.channel.assertQueue(this.queueName, {
@@ -66,4 +66,8 @@ class QueueService {
   }
 }
 
-module.exports = new QueueService();
+const defaultQueueService = new QueueService();
+
+module.exports = defaultQueueService;
+module.exports.QueueService = QueueService;
+module.exports.createQueueService = (options) => new QueueService(options);
