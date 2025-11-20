@@ -1,18 +1,30 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  NotFoundException,
+} from '@nestjs/common';
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
 
-@Controller('job')
+@Controller('jobs')
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 
   @Post()
-  create(@Body() createJobDto: CreateJobDto) {
-    return this.jobService.create(createJobDto);
+  async create(@Body() dto: CreateJobDto) {
+    const job = await this.jobService.createJob(dto);
+    return job; // Nest auto-serializes
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.jobService.findOne(+id);
+  async getOne(@Param('id') id: string) {
+    const job = await this.jobService.getJob(id);
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+    return job;
   }
 }
