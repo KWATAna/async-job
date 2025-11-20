@@ -26,12 +26,18 @@ export class RabbitmqService implements OnModuleInit, OnModuleDestroy {
   }
 
   //  TODO publish message to the jobs queue, extend it later to handle non default exchanges
-  publishToJobsQueue(message: unknown) {
+  publishToJobsQueue(message: unknown): boolean {
     // await channel.confirmSelect();
     const buffer = Buffer.from(JSON.stringify(message));
-    this.channel.sendToQueue(this.queueName, buffer, {
+    const success = this.channel.sendToQueue(this.queueName, buffer, {
       persistent: true,
     });
+
+    if (success) {
+      return true;
+    } else {
+      return false;
+    }
 
     /*
         await new Promise((resolve, reject) => {

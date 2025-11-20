@@ -6,19 +6,19 @@ interface JobMessage {
   id: string;
   targetUrl: string;
   method: string;
-  headers: Record<string, string>;
+  headers: string;
   payload?: unknown; // forces type checking, any disables type checking
   callbackUrl: string;
   maxRetries: number;
   retryDelay: number;
-  createdAt: Date;
+  createdAt: string;
 }
 
 @Injectable()
 export class JobPublisher {
   constructor(private readonly rabbitmqService: RabbitmqService) {}
 
-  publishJobCreated(job: Job) {
+  publishJobCreated(job: Job): boolean {
     const message: JobMessage = {
       id: job.id,
       targetUrl: job.targetUrl,
@@ -31,6 +31,6 @@ export class JobPublisher {
       createdAt: job.createdAt,
     };
 
-    this.rabbitmqService.publishToJobsQueue(message);
+    return this.rabbitmqService.publishToJobsQueue(message);
   }
 }

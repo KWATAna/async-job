@@ -54,16 +54,8 @@ export class RedisService implements OnModuleDestroy, OnModuleInit {
     });
   }
 
-  private jobKey(jobId: string): string {
-    return `job:${jobId}`;
-  }
-
-  private attemptsKey(jobId: string): string {
-    return `${this.jobKey(jobId)}:attempts`;
-  }
-
-  async set(key: string, value: unknown) {
-    await this.client.set(key, JSON.stringify(value));
+  async hset(key: string, value: unknown) {
+    await this.client.hset(key, JSON.stringify(value));
   }
 
   async get<T = any>(key: string): Promise<T | null> {
@@ -71,27 +63,11 @@ export class RedisService implements OnModuleDestroy, OnModuleInit {
     return data ? (JSON.parse(data) as T) : null;
   }
 
-  async storeJob(jobId: string, jobData: JobData): Promise<void> {
-    const key = this.jobKey(jobId);
-
-    const dataToStore: Record<string, any> = {
-      ...jobData,
-      attempts: (jobData.attempts || 0).toString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (jobData.headers) {
-      dataToStore.headers = JSON.stringify(jobData.headers);
+  async expire(key: string, ttlSeconds: number): Promise<boolean> {
+    if (ttlSeconds <= 0) {
+      return false;
     }
-    if (jobData.payload) {
-      dataToStore.payload = JSON.stringify(jobData.payload);
-    }
-    if (jobData.lastResponse) {
-      dataToStore.lastResponse = JSON.stringify(jobData.lastResponse);
-    }
-
-    await this.client.hset(key, dataToStore);
-    await this.client.expire(key, 24 * 60 * 60);
-    await this.client.expire(this.attemptsKey(jobId), 24 * 60 * 60);
+    const result = await this.client.expire(key, ttlSeconds);
+    return result === 1;
   }
 }

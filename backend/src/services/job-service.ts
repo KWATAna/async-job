@@ -11,15 +11,15 @@ class JobService {
 
     const published = await queueService.publishJob(job);
 
-    if (!published) {
-      await redisService.updateJobStatus(
-        job.id,
-        "failed",
-        "Failed to publish job to queue"
-      );
+  if (!published) {
+    await redisService.updateJobStatus(
+      job.id,
+      "failed",
+      "Failed to publish job to queue"
+    );
 
-      throw new Error("Failed to publish job to queue");
-    }
+    throw new Error("Failed to publish job to queue");
+  }
 
     return job;
   }
