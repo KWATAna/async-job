@@ -1,4 +1,4 @@
-import amqp, { Connection, Channel, ChannelModel } from "amqplib";
+import amqp, { Channel, ChannelModel } from "amqplib";
 
 export interface JobMessage {
   id: string;
@@ -37,7 +37,7 @@ class QueueService {
 
   constructor({
     amqpClient = amqp,
-    queueName = "request-queue",
+  queueName = "request-queue",
   }: QueueServiceOptions = {}) {
     this.amqpClient = amqpClient;
     this.queueName = queueName;
