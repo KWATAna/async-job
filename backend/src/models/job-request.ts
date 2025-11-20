@@ -1,4 +1,3 @@
-// src/models/job-request.ts
 import Joi from "joi";
 import { v4 as uuidv4 } from "uuid";
 import { allowedHttpMethods, defaultHttpMethod } from "../config/http-config";

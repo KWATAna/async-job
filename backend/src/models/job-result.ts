@@ -1,4 +1,3 @@
-// src/models/job-result.ts
 export interface CallbackFormat {
   jobId: string;
   status: string;
