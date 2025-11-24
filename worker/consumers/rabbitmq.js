@@ -17,7 +17,7 @@ class RabbitMQConsumer {
       this.connection = await amqp.connect(RABBITMQ_URL);
       this.channel = await this.connection.createChannel();
 
-      await this.channel.assertQueue(QUEUE_NAME, { durable: false });
+      await this.channel.assertQueue(QUEUE_NAME, { durable: true });
       this.channel.prefetch(1);
 
       this.isConnected = true;

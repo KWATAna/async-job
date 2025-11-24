@@ -13,7 +13,7 @@ import { CreateJobDto } from './dto/create-job.dto';
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 
-  @Post()
+  @Post('create')
   async create(@Body() dto: CreateJobDto) {
     const job = await this.jobService.createJob(dto);
     return job; // Nest auto-serializes

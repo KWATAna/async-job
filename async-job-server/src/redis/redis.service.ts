@@ -54,13 +54,16 @@ export class RedisService implements OnModuleDestroy, OnModuleInit {
     });
   }
 
-  async hset(key: string, value: unknown) {
-    await this.client.hset(key, JSON.stringify(value));
+  async hset(key: string, value: Record<string, any>) {
+    await this.client.hset(key, value);
   }
 
   async get<T = any>(key: string): Promise<T | null> {
-    const data = await this.client.get(key);
-    return data ? (JSON.parse(data) as T) : null;
+    const data = await this.client.hgetall(key);
+    if (!data || Object.keys(data).length === 0) {
+      return null;
+    }
+    return data as T;
   }
 
   async expire(key: string, ttlSeconds: number): Promise<boolean> {
